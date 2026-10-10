@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>STEAMLab · Educcartito · V8</title><link rel="stylesheet" href="./style.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/":"https://cdn.jsdelivr.net/npm/three@0.160.0/","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/","three/addons/renderers/CSS3DRenderer.js":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS3DRenderer.js","three/examples/jsm/renderers/CSS3DRenderer.js":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/renderers/CSS3DRenderer.js","mindar-image-three":"https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"}}</script>
+<style>
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#0b1b2c}
+#cameraLayer{position:fixed;inset:0;z-index:1;overflow:hidden;background:#090d14}
+#cameraLayer video{display:block}
+#setup{position:fixed;inset:0;z-index:100;background:#10273e;padding:20px;overflow:auto}
+#hud{position:fixed;top:8px;left:8px;right:auto;z-index:30;max-width:300px;display:none}
+#estado{z-index:40;bottom:12px;left:10px;right:10px}
+#debug{position:fixed;top:0;right:0;z-index:35;background:#06233bc7;color:#fff;font-size:11px;padding:5px;max-width:48vw}
+</style></head><body>
+<div id="cameraLayer"></div>
+<div id="setup"><h2>STEAMLab · Educcartito · V8</h2><p>Basado en la V6 que funcionó. Usa el mismo archivo privado <code>targets.mind</code>. No se sube a internet.</p><input id="mind" type="file" accept=".mind,application/octet-stream"><p><button id="start">Activar cámara y Educcartito</button></p><p id="preStatus">Selecciona tu archivo.</p><a href="index.html">Volver al inicio</a></div>
+<div id="hud"><div class="panel"><b>STEAMLab · Educcartito · V8</b><p>Educcartito aparece como figura RA flotante sobre la cara detectada.</p><label>Tamaño: <output id="xo">1.0</output> <input id="x" type="range" min="0.4" max="1.8" step="0.1" value="1"></label><label>Altura: <output id="yo">0.5</output> <input id="y" type="range" min="0.1" max="0.9" step="0.1" value="0.5"></label><p id="calc">Figura de Educcartito, siempre orientada hacia la cámara.</p><a href="index.html">Inicio</a></div></div>
+<div id="debug">V8 / iniciando componentes</div>
+<div id="estado" style="display:none">Iniciando...</div>
+<script>
+window.addEventListener('error',e=>{const st=document.getElementById('preStatus');if(st)st.textContent='Error de carga: '+(e.message||'desconocido');});
+window.addEventListener('unhandledrejection',e=>{const st=document.getElementById('preStatus');if(st)st.textContent='Error: '+(e.reason?.message||String(e.reason));});
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {MindARThree} from 'mindar-image-three';
+const $ = id => document.getElementById(id);
+let mindar, anchors=[], dots=[], url;
+let texture;
+function model(){
+ const g=new THREE.Group();
+ const mat=new THREE.SpriteMaterial({map:texture,transparent:true,depthTest:false,depthWrite:false});
+ const robot=new THREE.Sprite(mat);robot.center.set(0.5,0.05);robot.position.set(0,0,0.12);robot.scale.set(0.72,1.05,1);robot.renderOrder=4;g.add(robot);
+ const circle=new THREE.Mesh(new THREE.RingGeometry(0.25,0.29,48),new THREE.MeshBasicMaterial({color:0x53eaff,transparent:true,opacity:0.85,side:THREE.DoubleSide,depthTest:false,depthWrite:false}));circle.position.z=0.04;circle.renderOrder=3;g.add(circle);
+ return {g,robot};
+}
+function update(){const scale=+$('x').value,height=+$('y').value;$('xo').textContent=scale.toFixed(1);$('yo').textContent=height.toFixed(1);for(const robot of dots){robot.scale.set(0.72*scale,1.05*scale,1);robot.position.z=height;}}
+$('x').addEventListener('input',update);$('y').addEventListener('input',update);$('preStatus').textContent='Bibliotecas preparadas. Selecciona targets.mind y activa la cámara.';
+$('start').onclick=async()=>{
+ const file=$('mind').files[0];if(!file){$('preStatus').textContent='Selecciona primero targets.mind';return}
+ $('start').disabled=true;$('preStatus').textContent='Creando visor...';
+ try{
+   url=URL.createObjectURL(file);
+   mindar=new MindARThree({container:$('cameraLayer'),imageTargetSrc:url,maxTrack:1,uiLoading:'no',uiScanning:'no',uiError:'no'});
+   const {renderer,scene,camera}=mindar;
+   texture=await new THREE.TextureLoader().loadAsync('./educcartito.png');
+   renderer.setClearColor(0x000000,0);
+   scene.add(new THREE.AmbientLight(0xffffff,1));
+   for(let i=0;i<6;i++){
+     const anchor=mindar.addAnchor(i);const {g,robot}=model();anchor.group.add(g);anchors.push(anchor);dots.push(robot);
+     anchor.onTargetFound=()=>{$('estado').textContent=`Cara ${i+1} detectada. Educcartito está sobre ella.`;$('debug').textContent=`MindAR V8: cara ${i+1} detectada`;};
+     anchor.onTargetLost=()=>{$('estado').textContent='Buscando cara del Merge Cube…'};
+   }
+   update();
+   await mindar.start();
+   renderer.setAnimationLoop(()=>renderer.render(scene,camera));
+   $('setup').style.display='none';$('hud').style.display='block';$('estado').style.display='block';$('estado').textContent='Cámara iniciada. Enfoca una cara completa.';$('debug').textContent='MindAR V8: cámara iniciada';
+ }catch(e){$('preStatus').textContent='Error: '+String(e?.message||e);$('debug').textContent='V8 Error: '+String(e?.message||e);$('start').disabled=false}
+};
+</script></body></html>

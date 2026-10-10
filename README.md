@@ -1,1 +1,11 @@
-STEAMLab Educcartito V7. Basado directamente en el visor V6 del Merge Cube que ya funcionó. Publica los archivos de esta carpeta en GitHub Pages. Abre visor.html desde el celular; elige targets.mind local y pulsa Activar cámara y Educcartito. Figura frontal 2D como sprite tridimensional, no modelo volumétrico. No subas targets.mind a GitHub. Si reemplazas solo visor.html en un repositorio existente, asegúrate de que style.css y educcartito.png estén presentes.
+# Educcartito + Merge Cube V8
+
+Corrección específica para el error de resolución del módulo `three/addons/renderers/CSS3DRenderer.js`.
+
+## Actualización
+1. Subir a GitHub **visor.html** y **educcartito-v8.html** en la raíz de `steamlab-merge-educcartito`.
+2. Mantener `educcartito.png` y `style.css` ya existentes.
+3. Abrir la nueva dirección **/educcartito-v8.html** (evita caché de la anterior).
+4. Seleccionar el mismo `targets.mind` privado y activar la cámara.
+
+Si el error sigue, compartir captura con la URL completa y el nuevo mensaje: en ese caso revisaremos la carga real de MindAR. No se ha podido probar esta compilación en el móvil del usuario.
