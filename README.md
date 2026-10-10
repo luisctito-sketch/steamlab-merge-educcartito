@@ -27,3 +27,6 @@
 - `targets.mind` se mantiene local; no hace falta subirlo a GitHub.
 - El reconocimiento entre caras sigue siendo experimental, porque MindAR trata cada cara como un objetivo independiente.
 - Si Educcartito aparece demasiado pequeño o demasiado grande, más adelante podemos ajustar escala, altura y efectos.
+
+## Corrección de importaciones
+Se añadió `three/addons/` al mapa de importaciones para que MindAR pueda resolver `CSS3DRenderer.js`. Sustituye `visor.html` y recarga la página.
